@@ -12,6 +12,7 @@
 #include "ChaosWheeledVehicleMovementComponent.h"
 #include "BotVehicleAssessment.h"
 #include "TimerManager.h"
+#include "VehicleBotDriver.h"
 
 #define LOCTEXT_NAMESPACE "VehiclePawn"
 
@@ -44,6 +45,8 @@ ABotVehicleAssessmentPawn::ABotVehicleAssessmentPawn()
 
 	BackCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Back Camera"));
 	BackCamera->SetupAttachment(BackSpringArm);
+
+	BotDriver = CreateDefaultSubobject<UVehicleBotDriver>(TEXT("BotDriver"));
 
 	// Configure the car mesh
 	GetMesh()->SetSimulatePhysics(true);

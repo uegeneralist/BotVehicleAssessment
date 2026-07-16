@@ -10,6 +10,7 @@ class UCameraComponent;
 class USpringArmComponent;
 class UInputAction;
 class UChaosWheeledVehicleMovementComponent;
+class UVehicleBotDriver;
 struct FInputActionValue;
 
 /**
@@ -45,6 +46,9 @@ class ABotVehicleAssessmentPawn : public AWheeledVehiclePawn
 
 protected:
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bot")
+	TObjectPtr<UVehicleBotDriver> BotDriver;
+	
 	/** Steering Action */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* SteeringAction;

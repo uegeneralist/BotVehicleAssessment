@@ -16,6 +16,7 @@ public class BotVehicleAssessment : ModuleRules
 			"EnhancedInput",
 			"ChaosVehicles",
 			"PhysicsCore",
+			"NavigationSystem",
 			"UMG",
 			"Slate"
 		});
