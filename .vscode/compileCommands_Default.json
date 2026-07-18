@@ -1,0 +1,170 @@
+[
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\BotVehicleAssessment.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\BotVehicleAssessmentGameMode.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\BotVehicleAssessmentPawn.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\BotVehicleAssessmentPlayerController.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\BotVehicleAssessmentSportsCar.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\BotVehicleAssessmentUI.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\BotVehicleAssessmentWheelFront.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\BotVehicleAssessmentWheelRear.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\MyActor.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\OffroadCar\\BotVehicleAssessmentOffroadCar.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\OffroadCar\\BotVehicleAssessmentOffroadWheelFront.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\OffroadCar\\BotVehicleAssessmentOffroadWheelRear.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\SportsCar\\BotVehicleAssessmentSportsWheelFront.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\SportsCar\\BotVehicleAssessmentSportsWheelRear.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\Variant_OffRoad\\OffroadGameMode.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\Variant_TimeTrial\\TimeTrialGameMode.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\Variant_TimeTrial\\TimeTrialPlayerController.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\Variant_TimeTrial\\TimeTrialTrackGate.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\Variant_TimeTrial\\UI\\TimeTrialStartUI.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\Variant_TimeTrial\\UI\\TimeTrialUI.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	},
+	{
+		"file": "D:\\Unreal Projects\\Source\\BotVehicleAssessment\\VehicleBotDriver.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\Unreal Projects\\.vscode\\compileCommands_Default\\BotVehicleAssessment.0.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source"
+	}
+]
