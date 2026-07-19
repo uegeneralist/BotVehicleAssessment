@@ -137,6 +137,20 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Bot|State")
 	int32 RecoveryAttemptCount = 0;
 
+	// Running totals for the README measurement table — visible live in the
+	// Details panel while testing, and printed in the yourbot.Diag log line.
+	UPROPERTY(BlueprintReadOnly, Category = "Bot|State")
+	int32 LapsCompletedCount = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Bot|State")
+	int32 StuckEventsCount = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Bot|State")
+	int32 RecoveryCyclesCompletedCount = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Bot|State")
+	int32 TeleportCount = 0;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
@@ -183,6 +197,13 @@ private:
 	// is found (e.g. pathfinding itself fails).
 	bool FindSafeTeleportSpot(FVector& OutPoint) const;
 
+	// --- Measure (this phase) ---
+	// Called every tick. Silently no-ops unless the yourbot.Diag console
+	// variable is nonzero; once enabled, prints one line per second per
+	// bot: speed, state, why it isn't progressing (if it isn't), and the
+	// running totals used for the README measurement table.
+	void LogDiagnosticsIfEnabled(float DeltaTime);
+
 	UPROPERTY()
 	TObjectPtr<UChaosWheeledVehicleMovementComponent> Movement;
 
@@ -203,4 +224,10 @@ private:
 	// Recovery maneuver bookkeeping
 	float RecoveryElapsedSeconds = 0.f;
 	float PostRecoveryGraceRemaining = 0.f;
+
+	// Diagnostic bookkeeping (Measure phase)
+	// Updated at every point in the code that explains "why is it not
+	// making progress" — read once per second by LogDiagnosticsIfEnabled().
+	FString DiagnosticReason = TEXT("OK - patrolling normally");
+	float TimeSinceLastDiagLog = 0.f;
 };

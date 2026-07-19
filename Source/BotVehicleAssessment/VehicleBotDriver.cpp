@@ -7,6 +7,18 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
+#include "HAL/IConsoleManager.h"
+
+// Console variable for the Measure requirement: "yourbot.Diag 1" enables a
+// once-per-second, per-bot log line with speed, state, the reason it isn't
+// progressing (if it isn't), and running totals for the README table.
+// Default 0 = silent, so normal play/testing isn't spammed unless you ask
+// for it.
+static TAutoConsoleVariable<int32> CVarBotDiag(
+	TEXT("yourbot.Diag"),
+	0,
+	TEXT("If > 0, VehicleBotDriver logs speed/state/reason once per second per bot instance."),
+	ECVF_Default);
 
 UVehicleBotDriver::UVehicleBotDriver()
 {
@@ -98,6 +110,11 @@ void UVehicleBotDriver::TickComponent(float DeltaTime, ELevelTick TickType,
 	}
 	// --- END TEMP DEBUG ---
 
+	// Measure: silently no-ops unless yourbot.Diag is enabled. Called every
+	// tick so the once-per-second cadence is accurate regardless of which
+	// branch below runs.
+	LogDiagnosticsIfEnabled(DeltaTime);
+
 	// The state machine: while Recovering, hand off entirely to the
 	// recovery maneuver and skip normal patrol logic. Once recovery
 	// finishes (success or give-up-and-retry), control returns here next
@@ -130,6 +147,9 @@ void UVehicleBotDriver::TickComponent(float DeltaTime, ELevelTick TickType,
 	else
 	{
 		CurrentState = EBotDriveState::NoPath;
+		DiagnosticReason = CurrentPath.IsValid()
+			? TEXT("path exists but has fewer than 2 points")
+			: TEXT("no valid path to current patrol target (pathfinding failed, target unset, or outside navmesh)");
 		Movement->SetThrottleInput(0.f);
 		Movement->SetBrakeInput(1.f);
 		Movement->SetSteeringInput(0.f);
@@ -303,6 +323,13 @@ void UVehicleBotDriver::AdvancePatrolIndexIfArrived()
 	if (FVector::Dist(Owner->GetActorLocation(), Target->GetActorLocation()) <= ArrivalRadius)
 	{
 		CurrentTargetIndex = (CurrentTargetIndex + 1) % PatrolPoints.Num(); // loop, not one-shot
+
+		// A full lap completed whenever we wrap back around to index 0.
+		if (CurrentTargetIndex == 0)
+		{
+			++LapsCompletedCount;
+		}
+
 		CurrentPath.Reset();
 		TimeSinceLastPathRequest = RepathIntervalSeconds; // allow an immediate repath next tick
 	}
@@ -336,6 +363,11 @@ void UVehicleBotDriver::UpdateStuckDetection(float DeltaTime)
 		// since wheel speed isn't the same as actual displacement).
 		++ConsecutiveStuckStrikes;
 
+		DiagnosticReason = FString::Printf(
+			TEXT("no progress: moved %.0fcm in last %.1fs (need %.0fcm) — strike %d/%d"),
+			DistanceMoved, StuckCheckIntervalSeconds, StuckMinDistanceCm,
+			ConsecutiveStuckStrikes, StuckStrikesToTriggerRecovery);
+
 		UE_LOG(LogTemp, Verbose, TEXT("VehicleBotDriver: stuck strike %d/%d (moved %.0fcm in %.1fs)"),
 			ConsecutiveStuckStrikes, StuckStrikesToTriggerRecovery, DistanceMoved, TimeSinceLastStuckCheck);
 	}
@@ -345,6 +377,7 @@ void UVehicleBotDriver::UpdateStuckDetection(float DeltaTime)
 		// window of movement clears any prior strikes; we only care about
 		// consecutive failure.
 		ConsecutiveStuckStrikes = 0;
+		DiagnosticReason = TEXT("OK - patrolling normally");
 	}
 
 	LastStuckCheckLocation = CurrentLocation;
@@ -361,6 +394,10 @@ void UVehicleBotDriver::BeginRecovery()
 	CurrentState = EBotDriveState::Recovering;
 	RecoveryElapsedSeconds = 0.f;
 	ConsecutiveStuckStrikes = 0;
+	++StuckEventsCount;
+
+	DiagnosticReason = FString::Printf(TEXT("stuck — beginning recovery attempt %d/%d"),
+		RecoveryAttemptCount + 1, MaxPhysicalRecoveryAttempts);
 
 	UE_LOG(LogTemp, Log, TEXT("VehicleBotDriver: stuck — beginning recovery attempt %d/%d"),
 		RecoveryAttemptCount + 1, MaxPhysicalRecoveryAttempts);
@@ -378,6 +415,8 @@ void UVehicleBotDriver::TickRecovery(float DeltaTime)
 		// distance between us and whatever we hit before we start turning —
 		// turning immediately on contact tends to just grind along the
 		// obstacle rather than actually pulling away from it.
+		DiagnosticReason = FString::Printf(TEXT("recovering: reversing straight (attempt %d/%d)"),
+			RecoveryAttemptCount + 1, MaxPhysicalRecoveryAttempts);
 		Movement->SetThrottleInput(ReverseThrottle);
 		Movement->SetSteeringInput(0.f);
 		Movement->SetBrakeInput(0.f);
@@ -392,6 +431,8 @@ void UVehicleBotDriver::TickRecovery(float DeltaTime)
 		// pure pursuit would just point the car straight back at the same
 		// blocked lookahead point the instant control returns, which is
 		// exactly the "backs up, immediately drives into it again" symptom.
+		DiagnosticReason = FString::Printf(TEXT("recovering: reversing + turning away (attempt %d/%d)"),
+			RecoveryAttemptCount + 1, MaxPhysicalRecoveryAttempts);
 		Movement->SetThrottleInput(ReverseThrottle);
 		Movement->SetSteeringInput(-LastPatrolSteeringSign * ReverseSteeringMagnitude);
 		Movement->SetBrakeInput(0.f);
@@ -401,6 +442,7 @@ void UVehicleBotDriver::TickRecovery(float DeltaTime)
 	// Maneuver finished — stop and let physics settle for a moment before
 	// judging whether it worked (an instant re-check would trigger while
 	// the car is still slowing down from reversing, which isn't a fair test).
+	DiagnosticReason = TEXT("recovering: maneuver finished, waiting for physics to settle");
 	Movement->SetThrottleInput(0.f);
 	Movement->SetBrakeInput(1.f);
 	Movement->SetSteeringInput(0.f);
@@ -418,6 +460,10 @@ void UVehicleBotDriver::TickRecovery(float DeltaTime)
 	TimeSinceLastStuckCheck = 0.f;
 
 	++RecoveryAttemptCount;
+	++RecoveryCyclesCompletedCount; // one physical maneuver cycle completed
+	                                 // (whether or not it fully escaped — see
+	                                 // README notes: this counts attempts,
+	                                 // not verified sustained success).
 
 	if (RecoveryAttemptCount >= MaxPhysicalRecoveryAttempts)
 	{
@@ -434,6 +480,7 @@ void UVehicleBotDriver::TickRecovery(float DeltaTime)
 			// documented tradeoff (see README defects list) rather than an
 			// oversight: we prioritize "never pop in front of a player"
 			// over "always eventually get unstuck".
+			DiagnosticReason = TEXT("recovery attempts exhausted but a player can see the bot — retrying instead of teleporting");
 			UE_LOG(LogTemp, Warning, TEXT("VehicleBotDriver: recovery attempts exhausted but a player can see the vehicle — retrying physical recovery instead of teleporting."));
 			RecoveryAttemptCount = 0;
 			BeginRecovery();
@@ -506,6 +553,9 @@ void UVehicleBotDriver::TeleportToRecoverySpot()
 	UE_LOG(LogTemp, Warning, TEXT("VehicleBotDriver: teleported to recovery spot after %d failed physical attempts (no player was watching)."),
 		RecoveryAttemptCount);
 
+	++TeleportCount;
+	DiagnosticReason = TEXT("teleported to recovery spot (physical recovery exhausted, no player was watching)");
+
 	RecoveryAttemptCount = 0;
 	ConsecutiveStuckStrikes = 0;
 	CurrentPath.Reset();          // force a fresh path from the new location
@@ -574,4 +624,47 @@ bool UVehicleBotDriver::FindSafeTeleportSpot(FVector& OutPoint) const
 	}
 
 	return false; // every candidate point along the path was blocked
+}
+
+// ---------------------------------------------------------------------
+// Measure
+// ---------------------------------------------------------------------
+
+void UVehicleBotDriver::LogDiagnosticsIfEnabled(float DeltaTime)
+{
+	// Self-gated: does nothing at all unless the console variable is on,
+	// so normal testing isn't spammed by default.
+	if (CVarBotDiag.GetValueOnGameThread() <= 0)
+	{
+		TimeSinceLastDiagLog = 0.f; // don't build up a backlog while disabled
+		return;
+	}
+
+	TimeSinceLastDiagLog += DeltaTime;
+	if (TimeSinceLastDiagLog < 1.0f)
+	{
+		return; // only once per second per bot
+	}
+	TimeSinceLastDiagLog = 0.f;
+
+	const float SpeedCmPerSec = Movement ? Movement->GetForwardSpeed() : 0.f;
+
+	const TCHAR* StateStr =
+		CurrentState == EBotDriveState::Patrolling ? TEXT("Patrolling") :
+		CurrentState == EBotDriveState::Recovering ? TEXT("Recovering") : TEXT("NoPath");
+
+	// This single line intentionally contains everything the README's
+	// measurement table needs — the last line printed at the end of a
+	// 5-minute run already has the final totals, no separate counting pass
+	// required.
+	UE_LOG(LogTemp, Log,
+		TEXT("[Bot %s] Speed=%.1fcm/s State=%s Reason=\"%s\" | Totals: Laps=%d Stuck=%d RecoveryCycles=%d Teleports=%d"),
+		*GetOwner()->GetName(),
+		SpeedCmPerSec,
+		StateStr,
+		*DiagnosticReason,
+		LapsCompletedCount,
+		StuckEventsCount,
+		RecoveryCyclesCompletedCount,
+		TeleportCount);
 }
