@@ -51,17 +51,6 @@ void UVehicleBotDriver::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// --- TEMP DEBUG: confirms whether the state machine is cycling as expected. Remove later. ---
-if (GEngine)
-{
-    GEngine->AddOnScreenDebugMessage(1, 0.f, FColor::Yellow,
-        FString::Printf(TEXT("State=%s  RecoveryAttempts=%d  Strikes=%d"),
-            CurrentState == EBotDriveState::Patrolling ? TEXT("Patrolling") :
-            CurrentState == EBotDriveState::Recovering ? TEXT("Recovering") : TEXT("NoPath"),
-            RecoveryAttemptCount, ConsecutiveStuckStrikes));
-}
-// --- END TEMP DEBUG ---
-
 	AActor* Owner = GetOwner();
 
 	// Server-authoritative: clients must never make their own driving
@@ -129,23 +118,41 @@ void UVehicleBotDriver::RequestPathToCurrentTarget()
 	AActor* Target = PatrolPoints.IsValidIndex(CurrentTargetIndex) ? PatrolPoints[CurrentTargetIndex] : nullptr;
 	if (!Owner || !Target)
 	{
+		// --- TEMP DEBUG ---
+		UE_LOG(LogTemp, Error, TEXT("VehicleBotDriver: no Owner or no Target (index %d, PatrolPoints.Num()=%d)"),
+			CurrentTargetIndex, PatrolPoints.Num());
+		// --- END TEMP DEBUG ---
 		return;
 	}
 
 	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 	if (!NavSys)
 	{
+		// --- TEMP DEBUG ---
+		UE_LOG(LogTemp, Error, TEXT("VehicleBotDriver: no UNavigationSystemV1 in this world at all."));
+		// --- END TEMP DEBUG ---
 		return;
 	}
 
 	const ANavigationData* NavData = NavSys->GetDefaultNavDataInstance();
 	if (!NavData)
 	{
+		// --- TEMP DEBUG ---
+		UE_LOG(LogTemp, Error, TEXT("VehicleBotDriver: NavigationSystem exists but has no default NavData — is there a Nav Mesh Bounds Volume in the level, and has it been built?"));
+		// --- END TEMP DEBUG ---
 		return;
 	}
 
 	FPathFindingQuery Query(Owner, *NavData, Owner->GetActorLocation(), Target->GetActorLocation());
 	FPathFindingResult Result = NavSys->FindPathSync(Query);
+
+	// --- TEMP DEBUG ---
+	UE_LOG(LogTemp, Warning, TEXT("VehicleBotDriver: path request to target %d — Successful=%s PartialPath=%s NumPoints=%d"),
+		CurrentTargetIndex,
+		Result.IsSuccessful() ? TEXT("true") : TEXT("false"),
+		(Result.Path.IsValid() && Result.Path->IsPartial()) ? TEXT("true") : TEXT("false"),
+		Result.Path.IsValid() ? Result.Path->GetPathPoints().Num() : 0);
+	// --- END TEMP DEBUG ---
 
 	CurrentPath = Result.IsSuccessful() ? Result.Path : nullptr;
 }
