@@ -3,6 +3,7 @@
 #include "ChaosWheeledVehicleMovementComponent.h"
 #include "NavigationSystem.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
 
@@ -31,7 +32,15 @@ void UVehicleBotDriver::BeginPlay()
 			GetOwner() ? *GetOwner()->GetName() : TEXT("NONE"));
 	}
 
-	if (PatrolPoints.Num() < 4)
+	// The GameMode auto-spawns a player-controlled instance of this same
+	// Pawn class at PlayerStart for the human to drive — that instance is
+	// expected to have an empty PatrolPoints array, since it was never meant
+	// to patrol. Only warn about missing patrol points on AI-controlled /
+	// unpossessed instances (the actual bot you place and configure by hand).
+	const bool bIsPlayerDriven = GetOwner() && GetOwner()->IsA<APawn>() &&
+		Cast<APawn>(GetOwner())->IsPlayerControlled();
+
+	if (!bIsPlayerDriven && PatrolPoints.Num() < 4)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("VehicleBotDriver: PatrolPoints has %d entries — the brief asks for 4+."),
 			PatrolPoints.Num());
@@ -62,6 +71,22 @@ void UVehicleBotDriver::TickComponent(float DeltaTime, ELevelTick TickType,
 	{
 		return;
 	}
+
+	// --- TEMP DEBUG: on-screen HUD showing this bot's state. Safe to leave
+	// in during development; strip out (or wrap in #if !UE_BUILD_SHIPPING)
+	// before final submission. Uses GetUniqueID() as the message key so
+	// multiple bot instances each get their own line instead of overwriting
+	// each other.
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(static_cast<int32>(GetOwner()->GetUniqueID()), 0.f, FColor::Yellow,
+			FString::Printf(TEXT("[%s] State=%s  RecoveryAttempts=%d  Strikes=%d"),
+				*GetOwner()->GetName(),
+				CurrentState == EBotDriveState::Patrolling ? TEXT("Patrolling") :
+				CurrentState == EBotDriveState::Recovering ? TEXT("Recovering") : TEXT("NoPath"),
+				RecoveryAttemptCount, ConsecutiveStuckStrikes));
+	}
+	// --- END TEMP DEBUG ---
 
 	// The state machine: while Recovering, hand off entirely to the
 	// recovery maneuver and skip normal patrol logic. Once recovery
