@@ -2,6 +2,7 @@
 #include "VehicleBotDriver.h"
 #include "ChaosWheeledVehicleMovementComponent.h"
 #include "NavigationSystem.h"
+#include "CollisionShape.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
@@ -17,6 +18,15 @@ UVehicleBotDriver::UVehicleBotDriver()
 void UVehicleBotDriver::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// --- TEMP DEBUG: unconditional, always fires if this component exists
+	// and BeginPlay runs at all. If you don't see THIS line in the Output
+	// Log for a given actor, the component isn't running for that actor —
+	// full stop, before anything else in this file matters.
+	UE_LOG(LogTemp, Error, TEXT("VehicleBotDriver::BeginPlay running on owner=%s  HasAuthority=%s"),
+		GetOwner() ? *GetOwner()->GetName() : TEXT("NONE"),
+		(GetOwner() && GetOwner()->HasAuthority()) ? TEXT("true") : TEXT("false"));
+	// --- END TEMP DEBUG ---
 
 	// Find the vehicle's movement component on our owning Pawn — we drive
 	// through this directly (SetSteeringInput / SetThrottleInput / etc.)
@@ -128,6 +138,32 @@ void UVehicleBotDriver::TickComponent(float DeltaTime, ELevelTick TickType,
 	AdvancePatrolIndexIfArrived();
 }
 
+// ---------------------------------------------------------------------
+// Drive
+// ---------------------------------------------------------------------
+
+AActor* UVehicleBotDriver::ResolvePatrolTarget(int32 Index) const
+{
+	if (!PatrolPoints.IsValidIndex(Index))
+	{
+		return nullptr;
+	}
+
+	const TSoftObjectPtr<AActor>& SoftTarget = PatrolPoints[Index];
+
+	// Already loaded (the normal case — these are placed level actors in
+	// the same level as this component, so they're loaded together).
+	if (AActor* Loaded = SoftTarget.Get())
+	{
+		return Loaded;
+	}
+
+	// Fallback: force a synchronous resolve. This does NOT stream in a
+	// whole sublevel — it just resolves this one soft reference if for
+	// some reason it wasn't already loaded (e.g. World Partition setups).
+	return SoftTarget.LoadSynchronous();
+}
+
 void UVehicleBotDriver::RequestPathToCurrentTarget()
 {
 	// Don't re-path every tick (that was the Part A bug) — only every
@@ -140,7 +176,7 @@ void UVehicleBotDriver::RequestPathToCurrentTarget()
 	TimeSinceLastPathRequest = 0.f;
 
 	AActor* Owner = GetOwner();
-	AActor* Target = PatrolPoints.IsValidIndex(CurrentTargetIndex) ? PatrolPoints[CurrentTargetIndex] : nullptr;
+	AActor* Target = ResolvePatrolTarget(CurrentTargetIndex);
 	if (!Owner || !Target)
 	{
 		// --- TEMP DEBUG ---
@@ -258,7 +294,7 @@ void UVehicleBotDriver::ApplyPurePursuit(const FVector& LookaheadPoint)
 void UVehicleBotDriver::AdvancePatrolIndexIfArrived()
 {
 	AActor* Owner = GetOwner();
-	AActor* Target = PatrolPoints.IsValidIndex(CurrentTargetIndex) ? PatrolPoints[CurrentTargetIndex] : nullptr;
+	AActor* Target = ResolvePatrolTarget(CurrentTargetIndex);
 	if (!Owner || !Target)
 	{
 		return;
@@ -437,23 +473,34 @@ bool UVehicleBotDriver::AnyPlayerCanSeeVehicle() const
 void UVehicleBotDriver::TeleportToRecoverySpot()
 {
 	AActor* Owner = GetOwner();
-	AActor* Target = PatrolPoints.IsValidIndex(CurrentTargetIndex) ? PatrolPoints[CurrentTargetIndex] : nullptr;
+	FVector SafeSpot;
 
-	// Simplest reasonable recovery spot: back on the nav mesh near our
-	// current patrol target. A more thorough version would search nearby
-	// nav mesh points for one with a clear path back to the target — noted
-	// as a possible improvement in the README.
-	const FVector Fallback = Target ? Target->GetActorLocation() : Owner->GetActorLocation();
-
-	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
-	FNavLocation ProjectedLocation;
-	if (NavSys && NavSys->ProjectPointToNavigation(Fallback, ProjectedLocation))
+	if (FindSafeTeleportSpot(SafeSpot))
 	{
-		Owner->SetActorLocation(ProjectedLocation.Location, false, nullptr, ETeleportType::TeleportPhysics);
+		Owner->SetActorLocation(SafeSpot, false, nullptr, ETeleportType::TeleportPhysics);
 	}
 	else
 	{
-		Owner->SetActorLocation(Fallback, false, nullptr, ETeleportType::TeleportPhysics);
+		// Couldn't find a verified-clear spot along the path (e.g. path
+		// itself failed) — fall back to the old behaviour of projecting the
+		// raw patrol target onto the navmesh. Less safe, but better than
+		// doing nothing; this fallback path is worth calling out in the
+		// README's honest defects list.
+		AActor* Target = ResolvePatrolTarget(CurrentTargetIndex);
+		const FVector Fallback = Target ? Target->GetActorLocation() : Owner->GetActorLocation();
+
+		UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+		FNavLocation ProjectedLocation;
+		if (NavSys && NavSys->ProjectPointToNavigation(Fallback, ProjectedLocation))
+		{
+			Owner->SetActorLocation(ProjectedLocation.Location, false, nullptr, ETeleportType::TeleportPhysics);
+		}
+		else
+		{
+			Owner->SetActorLocation(Fallback, false, nullptr, ETeleportType::TeleportPhysics);
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("VehicleBotDriver: FindSafeTeleportSpot failed — used unverified fallback location."));
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("VehicleBotDriver: teleported to recovery spot after %d failed physical attempts (no player was watching)."),
@@ -464,4 +511,67 @@ void UVehicleBotDriver::TeleportToRecoverySpot()
 	CurrentPath.Reset();          // force a fresh path from the new location
 	TimeSinceLastPathRequest = RepathIntervalSeconds;
 	CurrentState = EBotDriveState::Patrolling;
+}
+
+bool UVehicleBotDriver::FindSafeTeleportSpot(FVector& OutPoint) const
+{
+	AActor* Owner = GetOwner();
+	AActor* Target = ResolvePatrolTarget(CurrentTargetIndex);
+	if (!Owner || !Target)
+	{
+		return false;
+	}
+
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	if (!NavSys)
+	{
+		return false;
+	}
+
+	const ANavigationData* NavData = NavSys->GetDefaultNavDataInstance();
+	if (!NavData)
+	{
+		return false;
+	}
+
+	// Compute a fresh path from where we're actually stuck (not the stale
+	// CurrentPath computed before we hit the obstacle) to the patrol target.
+	FPathFindingQuery Query(Owner, *NavData, Owner->GetActorLocation(), Target->GetActorLocation());
+	FPathFindingResult Result = NavSys->FindPathSync(Query);
+	if (!Result.IsSuccessful() || !Result.Path.IsValid())
+	{
+		return false;
+	}
+
+	const TArray<FNavPathPoint>& Points = Result.Path->GetPathPoints();
+	const FVector VehicleLoc = Owner->GetActorLocation();
+
+	// Walk along the path and pick the first point that is (a) far enough
+	// away that we're landing well clear of whatever we were stuck against,
+	// not just barely past it, and (b) actually free of blocking collision
+	// right now — a teleport that still overlaps geometry is worse than no
+	// teleport, since the physics engine will violently eject the vehicle
+	// from the overlap on the next tick, which looks like clipping through
+	// the wall.
+	for (const FNavPathPoint& Point : Points)
+	{
+		if (FVector::Dist(VehicleLoc, Point.Location) < TeleportClearanceDistance)
+		{
+			continue;
+		}
+
+		const FVector TestLocation = Point.Location + FVector(0.f, 0.f, 50.f); // small lift, avoid ground clipping
+		const FCollisionShape VehicleBounds = FCollisionShape::MakeBox(TeleportClearanceCheckExtent);
+
+		const bool bBlocked = GetWorld()->OverlapBlockingTestByChannel(
+			TestLocation, FQuat::Identity, ECC_Pawn, VehicleBounds);
+
+		if (!bBlocked)
+		{
+			OutPoint = TestLocation;
+			return true;
+		}
+	}
+
+	return false; // every candidate point along the path was blocked
 }

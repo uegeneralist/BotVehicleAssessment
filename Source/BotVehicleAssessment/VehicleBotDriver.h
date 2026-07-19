@@ -33,8 +33,16 @@ public:
 	UVehicleBotDriver();
 
 	// Drag 4+ empty Actors (or Target Points) from the level into this array.
+	// TSoftObjectPtr (not raw AActor*) is deliberate: a hard AActor* here
+	// gets corrupted every time this component's C++ class is recompiled
+	// (Live Coding or a full rebuild), because reinstancing routes through
+	// the class archetype/CDO, and Unreal disallows a hard reference from
+	// a CDO to another level's actor ("Illegal TEXT reference to a private
+	// object in external package"). A soft reference stores a path instead
+	// of a hard pointer, so it survives recompiles — resolve it with
+	// GetPatrolTarget() below rather than dereferencing the array directly.
 	UPROPERTY(EditAnywhere, Category = "Bot|Patrol")
-	TArray<AActor*> PatrolPoints;
+	TArray<TSoftObjectPtr<AActor>> PatrolPoints;
 
 	// --- Steering tuning ---
 	UPROPERTY(EditAnywhere, Category = "Bot|Steering")
@@ -108,6 +116,20 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Bot|Recovery")
 	float PostRecoveryGraceSeconds = 1.0f;
 
+	// When teleport-as-last-resort actually happens, we don't just jump to
+	// wherever the patrol target is (it might be right past the obstacle we
+	// got stuck on, landing us overlapping it). Instead we walk along a
+	// fresh path toward the target and pick the first point that's at least
+	// this far away AND verified clear of collision.
+	UPROPERTY(EditAnywhere, Category = "Bot|Recovery")
+	float TeleportClearanceDistance = 600.f;
+
+	// Rough vehicle bounding box (half-extents, cm) used to test whether a
+	// candidate teleport spot is actually clear before we use it. Tune this
+	// to roughly match your vehicle's real dimensions.
+	UPROPERTY(EditAnywhere, Category = "Bot|Recovery")
+	FVector TeleportClearanceCheckExtent = FVector(150.f, 100.f, 75.f);
+
 	// Read-only, useful to watch live in the Details panel while testing.
 	UPROPERTY(BlueprintReadOnly, Category = "Bot|State")
 	EBotDriveState CurrentState = EBotDriveState::NoPath;
@@ -126,6 +148,11 @@ private:
 	bool FindLookaheadPoint(FVector& OutPoint) const;
 	void ApplyPurePursuit(const FVector& LookaheadPoint);
 	void AdvancePatrolIndexIfArrived();
+
+	// Resolves PatrolPoints[Index] (a soft reference) into a real actor
+	// pointer for this frame. Returns nullptr if the index is invalid or
+	// the soft reference is unset/unresolvable.
+	AActor* ResolvePatrolTarget(int32 Index) const;
 
 	// --- Recover (this phase) ---
 	// Called every tick while Patrolling. Updates the stuck-strike counter
@@ -149,6 +176,12 @@ private:
 	// Last-resort recovery: only called after MaxPhysicalRecoveryAttempts
 	// consecutive failures AND AnyPlayerCanSeeVehicle() is false.
 	void TeleportToRecoverySpot();
+
+	// Walks a fresh path toward the current patrol target and returns the
+	// first point that's both past TeleportClearanceDistance away and
+	// verified clear of blocking collision. Returns false if no such point
+	// is found (e.g. pathfinding itself fails).
+	bool FindSafeTeleportSpot(FVector& OutPoint) const;
 
 	UPROPERTY()
 	TObjectPtr<UChaosWheeledVehicleMovementComponent> Movement;
